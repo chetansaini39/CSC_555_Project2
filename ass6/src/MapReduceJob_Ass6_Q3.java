@@ -4,7 +4,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Mapreduce for query: SELECT EFirst, ELast, EID, CID, Address
@@ -29,8 +31,6 @@ public class MapReduceJob_Ass6_Q3 {
             String address_Age=splits[3];
             outputCollector.collect(new Text(firstName+" "+lastName),new Text(empId_custId+"|"+address_Age));
 
-
-
         }
     }
 
@@ -39,38 +39,35 @@ public class MapReduceJob_Ass6_Q3 {
 
         @Override
         public void reduce(Text text, Iterator<Text> iterator, OutputCollector<Text, Text> outputCollector, Reporter reporter) throws IOException {
-            String EID="", CID="", ADDRESS="";
+            String EID, CID, ADDRESS,NAME;
+            List<String> empIDList=new ArrayList<>();
+            List<String> cusIDList=new ArrayList<>();
+            List<String> addList=new ArrayList<>();
             while (iterator.hasNext())
             {
-                StringBuilder sb= new StringBuilder();
-                String[] strings=iterator.next().toString().split("\\|");
-                String eid_cid=strings[0];
-                String add_age=strings[1];
-            // if new EID is ==old EID
-                if(EID.length()>1 && CID.length()>1)//they are not null
-                {
-                    if((!eid_cid.equals(EID)) || !eid_cid.equals(CID))//value not equal to old value
-                    {
-                        sb.append(EID+"|");
-                        sb.append(CID+"|");
-                        sb.append(ADDRESS);
-                        outputCollector.collect(text,new Text(sb.toString()));
-                    }
-                }
+                String[] data= iterator.next().toString().split("\\|");//split the input
+                String eid_cid=data[0];
+                String address_age=data[1];
+                if(eid_cid.startsWith("EMP"))
+                    empIDList.add(eid_cid);
                 else
-                {
-                    if(eid_cid.startsWith("EMP"))
-                    {
-                        if(!eid_cid.equals(EID))
-                        EID=strings[0];
-                    }
-                    else
-                    if(!eid_cid.equals(CID))
-                        CID=strings[0];
-                        ADDRESS=strings[1];
+                {   cusIDList.add(eid_cid);
+                if(!addList.contains(address_age))
+                    addList.add(address_age);
                 }
 
             }
+
+            for (String eid:empIDList) {
+                for (String cid:cusIDList) {
+                    for (String add:addList) {
+                        outputCollector.collect(text,new Text(eid+"|"+cid+"|"+add));
+                    }
+                }
+
+            }
+
+
         }
     }
     public static void main(String[] args) throws Exception {
